@@ -1,4 +1,4 @@
-<cfset showMessage = false>
+
 
 <!DOCTYPE html>
 <html lang="en">
@@ -10,44 +10,47 @@
         <link href="./css/bootstrap.min.css" rel="stylesheet">
     </head>
     <body>
-    <cfoutput>
-        <cfif StructKeyExists(session, "errors")>
-            <div id="message" class="alert alert-success" role="alert">
-                #session.errors#
-            </div>
-        </cfif>
-        <cfif StructKeyExists(session, "success")>
-           <cfset session.success= true>
-        <cfelse>
-            <cfset session.success= false>
-        </cfif>
-        <section>
-        
-            <div class="d-flex  mt-5 p-3">
-                <div class="col-3">
-                    <a href="upload/Plain_Template.xlsx" class="btn btn-info" download>Plane Template</a>
+        <cfoutput>
+            <cfif StructKeyExists(session, "errors")>
+                <div id="" class="alert alert-danger" role="alert">
+                    #session.errors#
                 </div>
-                <div class="col-3">
-                    <a href="component/userDetails.cfc?method=excelDownload" class="btn btn-info">Template With Data</a>
+            </cfif>
+            <cfif StructKeyExists(session, "success")>
+                <cfset session.success= true>
+                <div id="message" class="alert alert-success" role="alert">
+                    Saved Successfully !!!
                 </div>
-                <div class="col">
-                    <form name="form" method="post" action="component/userDetails.cfc?method=excelUpload" enctype="multipart/form-data"> 
-                        <div class="row">
-                            <div class="col-2">
-                                <label for="inputFile" class="btn btn-secondary">
-                                    <input type="file" name="inputFile" id="inputFile" class="d-none">
-                                    Browse
-                                </label>
-                            </div>
-                            <div class="col-4">
-                                <button type="submit" class="btn btn-success" >Upload</button>
-                            </div>
-                        </div>
-                    </form>
-                </div>
-            </div>
+            <cfelse>
+                <cfset session.success= false>
+            </cfif>
+            <section>
             
-        </section>
+                <div class="d-flex  mt-5 p-3">
+                    <div class="col-3">
+                        <a href="upload/Plain_Template.xlsx" class="btn btn-info" download>Plain Template</a>
+                    </div>
+                    <div class="col-3">
+                        <a href="component/userDetails.cfc?method=excelDownload" class="btn btn-info">Template With Data</a>
+                    </div>
+                    <div class="col">
+                        <form name="form" method="post" action="component/userDetails.cfc?method=excelUpload" enctype="multipart/form-data"> 
+                            <div class="row">
+                                <div class="col-2">
+                                    <label for="inputFile" class="btn btn-secondary">
+                                        <input type="file" name="inputFile" id="inputFile" class="d-none">
+                                        Browse
+                                    </label>
+                                </div>
+                                <div class="col-4">
+                                    <button type="submit" class="btn btn-success" >Upload</button>
+                                </div>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+                
+            </section>
             <cfset UserObj=CreateObject("component","component.userDetails")/>
             <cfset users=UserObj.displayUserData()/>
             <div>
@@ -80,19 +83,19 @@
             </div>  
             <script src="js/jquery-3.6.0.min.js"></script> 
             <script src="js/bootstrap.min.js"></script>
-        <script>
-            const redirectPage = () => {
-                if((#session.success#==true ) && (#url?.success#)){
-                    window.location = "autoDownloadExcel.cfm";
+		    <script src="js/validation.js"></script>
+            <script>
+                const redirectPage = () => {
+                    if((#session.success#==true ) && (#url?.success#)){
+                        window.location = "autoDownloadExcel.cfm";
+                    }
+                    <cfset session.success = false>
                 }
-                <cfset session.success = false>
-            }
-            setTimeout(redirectPage(), 3000);
-        </script>
+                setTimeout(redirectPage(), 3000);
+            </script>
+            
+        </cfoutput>
         
-            </div>
-        </div>
-    </cfoutput>
     </body> 
     
 </html>

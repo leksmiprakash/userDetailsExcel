@@ -2,15 +2,13 @@
 
     <cffunction name="displayUserData" access="public" returnType="any" output="false">
         <cfquery name = "getUsers">
-             SELECT usertable.*, GROUP_CONCAT(roles.roleTitle SEPARATOR ', ')  AS roleofUser
-            FROM
+            SELECT usertable.*, GROUP_CONCAT(roles.roleTitle SEPARATOR ', ')  AS roleofUser
+            FROM(
                 (
-                    (
-                        usertable
-                    JOIN userroles ON userroles.userId = usertable.userId
-                    )
-                JOIN roles ON userroles.roleId = roles.roleId
+                    usertable JOIN userroles ON userroles.userId = usertable.userId
                 )
+                JOIN roles ON userroles.roleId = roles.roleId
+            )
             GROUP BY userroles.userId;
         </cfquery>
         <cfreturn getUsers> 
@@ -20,8 +18,8 @@
         <cfset local.thisDir = expandPath(".")>
         <cfset local.errors = "">
         <cfset local.success = false>
-        <cfset local.rowsWithError = 2>
-        <cfset local.rowsWithOutError = 0>
+        <cfset local.errorRows = 2>
+        <cfset local.errorFreeRows = 0>
         <cffile action="upload" destination="#local.thisDir#/upload" filefield="inputFile" result="upload" nameconflict="makeunique">
         <cfif upload.fileWasSaved>
             <cfset local.savedFile = upload.serverDirectory & "\" & upload.serverFile>
@@ -41,26 +39,20 @@
                         select *
                         from roles;
                     </cfquery>
-                    <cfset local.rowValidationErrorMsg = "">
+                    <cfset local.rowErrorMsg = "">
                     <cfset local.rolesArray = arrayNew(1)>
                     <cfloop array="#getRoles#" item="roleFromQuery">
                         <cfset arrayAppend(local.rolesArray, roleFromQuery.roleTitle)>
                     </cfloop>
                     <cfset local.totalValidRows = 1>
                     <cfloop index="rows" from="2" to="#data.recordCount#">
-                        <cfset local.emptyRows = 1>
-                        <cfloop index="emptyCol" from="1" to="#listLen(local.columnNames)-1#">
-                            <cfif len(data[listGetAt(local.columnNames, emptyCol)][rows]) EQ 0>
-                                <cfset local.emptyRows = local.emptyRows+1>
-                            </cfif>
-                        </cfloop>
-                        <cfif local.emptyRows GTE 7>
-                            <cfcontinue>
-                        </cfif>
+                        
+                        
                         <cfset local.totalValidRows = local.totalValidRows+1>
                     </cfloop>
                     <cfloop index="row" from="2" to="#data.recordCount#">
-                        <cfset local.rowValidationError = false>
+                        <cfset local.rowError = false>
+                        <cfset local.rowErrorMsg = "">
                         <cfset local.emptyRow = 1>
                         <cfloop index="emptyCheckCol" from="1" to="#listLen(local.columnNames)-1#">
                             <cfif len(data[listGetAt(local.columnNames, emptyCheckCol)][row]) EQ 0>
@@ -75,41 +67,41 @@
                                 <cfif len(data[listGetAt(local.columnNames, col)][row]) GT 0>
                                     <cfif listGetAt(local.columnNames, col) == 'First Name'>
                                         <cfif !isValid("regex", data[listGetAt(local.columnNames, col)][row], "^[a-zA-Z ]*$")>
-                                            <cfset local.rowValidationError = true>
-                                            <cfif len(local.rowValidationErrorMsg) GT 0>
-                                                <cfset local.rowValidationErrorMsg = local.rowValidationErrorMsg & ', ' & 'First Name can only have alphabets and space'>
+                                            <cfset local.rowError = true>
+                                            <cfif len(local.rowErrorMsg) GT 0>
+                                                <cfset local.rowErrorMsg = listAppend(local.rowErrorMsg, 'First Name can only have alphabets and space')>
                                             <cfelse>
-                                                <cfset local.rowValidationErrorMsg = 'First Name can only have alphabets and space'>
+                                                <cfset local.rowErrorMsg = 'First Name can only have alphabets and space'>
                                             </cfif>
                                         </cfif>
                                     </cfif>
                                     <cfif listGetAt(local.columnNames, col) == 'Last Name'>
                                         <cfif !isValid("regex", data[listGetAt(local.columnNames, col)][row], "^[a-zA-Z ]*$")>
-                                            <cfset local.rowValidationError = true>
-                                            <cfif len(local.rowValidationErrorMsg) GT 0>
-                                                <cfset local.rowValidationErrorMsg = local.rowValidationErrorMsg & ', ' & 'Last Name can only have alphabets and space'>
+                                            <cfset local.rowError = true>
+                                            <cfif len(local.rowErrorMsg) GT 0>
+                                                <cfset local.rowErrorMsg = listAppend(local.rowErrorMsg, 'Last Name can only have alphabets and space')>
                                             <cfelse>
-                                                <cfset local.rowValidationErrorMsg = 'Last Name can only have alphabets and space'>
+                                                <cfset local.rowErrorMsg = 'Last Name can only have alphabets and space'>
                                             </cfif>
                                         </cfif>
                                     </cfif>
                                     <cfif listGetAt(local.columnNames, col) == 'Email'>
                                         <cfif !isValid("email", data[listGetAt(local.columnNames, col)][row])>
-                                            <cfset local.rowValidationError = true>
-                                            <cfif len(local.rowValidationErrorMsg) GT 0>
-                                                <cfset local.rowValidationErrorMsg = local.rowValidationErrorMsg & ', ' & 'Enter a valid Email'>
+                                            <cfset local.rowError = true>
+                                            <cfif len(local.rowErrorMsg) GT 0>
+                                                <cfset local.rowErrorMsg = listAppend(local.rowErrorMsg, 'Enter a valid Email')>
                                             <cfelse>
-                                                <cfset local.rowValidationErrorMsg = 'Enter a valid Email'>
+                                                <cfset local.rowErrorMsg = 'Enter a valid Email'>
                                             </cfif>
                                         </cfif>
                                     </cfif>
                                     <cfif listGetAt(local.columnNames, col) == 'Phone'>
                                         <cfif !isValid("regex", data[listGetAt(local.columnNames, col)][row],"^(\+\d{1,2}\s?)?1?\-?\.?\s?\(?\d{3}\)?[\s.-]?\d{3}[\s.-]?\d{4}$")>
-                                            <cfset local.rowValidationError = true>
-                                            <cfif len(local.rowValidationErrorMsg) GT 0>
-                                                <cfset local.rowValidationErrorMsg = local.rowValidationErrorMsg & ', ' & 'Enter a valid Phone Number'>
+                                            <cfset local.rowError = true>
+                                            <cfif len(local.rowErrorMsg) GT 0>
+                                                <cfset local.rowErrorMsg = listAppend(local.rowErrorMsg, 'Enter a valid Phone Number')>
                                             <cfelse>
-                                                <cfset local.rowValidationErrorMsg = 'Enter a valid Phone Number'>
+                                                <cfset local.rowErrorMsg = 'Enter a valid Phone Number'>
                                             </cfif>
                                         </cfif>
                                     </cfif>
@@ -128,30 +120,30 @@
                                             </cfif>
                                         </cfloop>
                                         <cfif !local.allRoleExist>
-                                            <cfset local.rowValidationError = true>
-                                            <cfif len(local.rowValidationErrorMsg) GT 0>
-                                                <cfset local.rowValidationErrorMsg = local.rowValidationErrorMsg & ', ' & 'Roles are found to be incorrect'>
+                                            <cfset local.rowError = true>
+                                            <cfif len(local.rowErrorMsg) GT 0>
+                                                <cfset local.rowErrorMsg = listAppend(local.rowErrorMsg, 'Roles are not valid')>
                                             <cfelse>
-                                                <cfset local.rowValidationErrorMsg = 'Roles are found to be incorrect'>
+                                                <cfset local.rowErrorMsg = 'Roles are not valid'>
                                             </cfif>
                                         </cfif>
                                     </cfif>
                                 <cfelse>
-                                    <cfset local.rowValidationError = true>
-                                    <cfif len(local.rowValidationErrorMsg) GT 0>
-                                        <cfset local.rowValidationErrorMsg = local.rowValidationErrorMsg & ', ' & '#listGetAt(local.columnNames, col)# is missing'>
+                                    <cfset local.rowError = true>
+                                    <cfif len(local.rowErrorMsg) GT 0>
+                                        <cfset local.rowErrorMsg = listAppend(local.rowErrorMsg, '#listGetAt(local.columnNames, col)# is missing')>
                                     <cfelse>
-                                        <cfset local.rowValidationErrorMsg = '#listGetAt(local.columnNames, col)# is missing'>
+                                        <cfset local.rowErrorMsg = '#listGetAt(local.columnNames, col)# is missing'>
                                     </cfif>
                                 </cfif>
                             </cfif>
                         </cfloop>
-                        <cfif local.rowValidationError>
+                        <cfif local.rowError>
                             <cfloop index="colIndex" from="1" to="#listLen(local.columnNames)-1#">
-                                <cfset SpreadsheetSetCellValue(spreadsheet, data[listGetAt(local.columnNames, colIndex)][row] , local.rowsWithError, colIndex) />
+                                <cfset SpreadsheetSetCellValue(spreadsheet, data[listGetAt(local.columnNames, colIndex)][row] , local.errorRows, colIndex) />
                             </cfloop>
-                            <cfset SpreadsheetSetCellValue(spreadsheet, local.rowValidationErrorMsg , local.rowsWithError, 8) />
-                            <cfset  local.rowsWithError =  local.rowsWithError+1>
+                            <cfset SpreadsheetSetCellValue(spreadsheet, local.rowErrorMsg , local.errorRows, 8) />
+                            <cfset  local.errorRows =  local.errorRows+1>
                         <cfelse>
                             <cfquery name="userExist">
                                 select userId
@@ -169,7 +161,7 @@
                                             address = <cfqueryparam cfsqltype="cf_sql_varchar" value="#data['Address'][row]#">, 
                                             email = <cfqueryparam cfsqltype="cf_sql_varchar" value="#data['Email'][row]#">, 
                                             phone = <cfqueryparam cfsqltype="cf_sql_varchar" value="#data['Phone'][row]#">, 
-                                            dob = <cfqueryparam cfsqltype="cf_sql_timestamp" value="#data['DOB'][row]#">
+                                            dob = <cfqueryparam cfsqltype="cf_sql_date" value="#data['DOB'][row]#">
                                         WHERE usertable.userId = <cfqueryparam cfsqltype="cf_sql_integer" value="#userExist.userId#">
                                     </cfquery>
                                     <cfquery name="removeRolesOfUser">
@@ -214,22 +206,22 @@
                             <cfcatch type="any">
                                 <cfset local.queryExcecuteSucceded = false>
                                 <cfloop index="colIndex" from="1" to="#listLen(local.columnNames)-1#">
-                                    <cfset SpreadsheetSetCellValue(spreadsheet, data[listGetAt(local.columnNames, colIndex)][row] , local.rowsWithError, colIndex) />
+                                    <cfset SpreadsheetSetCellValue(spreadsheet, data[listGetAt(local.columnNames, colIndex)][row] , local.errorRows, colIndex) />
                                 </cfloop>
-                                <cfset SpreadsheetSetCellValue(spreadsheet, '#cfcatch.message#' , local.rowsWithError, 8) />
-                                <cfset  local.rowsWithError =  local.rowsWithError+1>
+                                <cfset SpreadsheetSetCellValue(spreadsheet, '#cfcatch.message#' , local.errorRows, 8) />
+                                <cfset  local.errorRows =  local.errorRows+1>
                             </cfcatch>
                             </cftry>
                             <cfif local.queryExcecuteSucceded>
                                 <cfloop index="colIndex" from="1" to="#listLen(local.columnNames)-1#">
-                                    <cfset SpreadsheetSetCellValue(spreadsheet, data[listGetAt(local.columnNames, colIndex)][row] , local.totalValidRows-local.rowsWithOutError, colIndex) />
+                                    <cfset SpreadsheetSetCellValue(spreadsheet, data[listGetAt(local.columnNames, colIndex)][row] , local.totalValidRows-local.errorFreeRows, colIndex) />
                                 </cfloop>
                                 <cfif queryRecordCount(userExist) GT 0>
-                                    <cfset SpreadsheetSetCellValue(spreadsheet, 'Updated' ,   local.totalValidRows-local.rowsWithOutError, 8) />
+                                    <cfset SpreadsheetSetCellValue(spreadsheet, 'Updated' ,   local.totalValidRows-local.errorFreeRows, 8) />
                                 <cfelse>
-                                    <cfset SpreadsheetSetCellValue(spreadsheet, 'Added' ,   local.totalValidRows-local.rowsWithOutError, 8) />
+                                    <cfset SpreadsheetSetCellValue(spreadsheet, 'Added' ,   local.totalValidRows-local.errorFreeRows, 8) />
                                 </cfif>
-                                <cfset  local.rowsWithOutError =  local.rowsWithOutError  +1>
+                                <cfset  local.errorFreeRows =  local.errorFreeRows  +1>
                             </cfif>
                         </cfif>
                     </cfloop>
@@ -258,7 +250,6 @@
     </cffunction>
 
      <cffunction  name="excelDownload" access="remote">
-        <cfset local.columnNames = 'First Name,Last Name,Address,Email,Phone,DOB,Role'>
         <cfset getAllUsers = displayUserData()>
         <cfset spreadsheet = spreadsheetNew("UsersList") />
         <cfset SpreadsheetSetActiveSheet(spreadsheet, "UsersList")/>
@@ -280,7 +271,6 @@
         </cfloop>
         <cfheader name="Content-Disposition" value="inline; filename=users.xls">
         <cfcontent type="application/vnd.msexcel" variable="#SpreadSheetReadBinary(spreadsheet)#">
-        <cflocation  url="index.cfm" addtoken="false"> 
     </cffunction>
 
 </cfcomponent>
